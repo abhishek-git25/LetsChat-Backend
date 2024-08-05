@@ -1,0 +1,11 @@
+MONGO_URI = mongodb+srv://letschat:letschat@companycluster.6oro6kk.mongodb.net/
+ 
+JWT_SECRET = ddjfclesdldsflkjl
+ADMIN_SECRET_KEY = koregajiyuba
+NODE_ENV = DEVELOPMENT
+
+CLIENT_URL = 
+
+CLOUDINARY_CLOUD_NAME = dhzizweww
+CLOUNDINARY_API_KEY = 796762847584354
+CLOUDINARY_API_SECRET = YpRIc3s3UlXcrUCiVORGbfO6eeA
