@@ -7,7 +7,7 @@ import { createServer } from 'http';
 import { Server } from "socket.io";
 import { v4 as uuid } from 'uuid';
 import { corsOptions } from "./constants/config.js";
-import { ANSWER_CALL, CALL_ACCEPTED, CALL_ENDED, CALL_USER, CHAT_JOINED, CHAT_LEFT, JOIN_ROOM, JOINED_ROOM, NEW_MESSAGE, NEW_MESSAGE_ALERT, ONLINE_USER, START_TYPING, STOP_TYPING } from "./constants/events.js";
+import { ANSWER_CALL, CALL_ACCEPTED, CALL_ENDED, CALL_USER, CHAT_JOINED, CHAT_LEFT, DELETE_MESSAGE, EDIT_MESSAGE, JOIN_ROOM, JOINED_ROOM, NEW_MESSAGE, NEW_MESSAGE_ALERT, ONLINE_USER, REFETCH_CHATS, START_TYPING, STOP_TYPING } from "./constants/events.js";
 import { getSockets } from "./lib/helper.js";
 import { socketAuthenticator } from "./middlewares/auth.js";
 import { errorMiddleware } from "./middlewares/error.js";
@@ -31,6 +31,10 @@ export const envMode = process.env.NODE_ENV || "PRODUCTION"
 export const adminSecretKey = process.env.ADMIN_SECRET_KEY || "ABHISHEK_YADAV"
 export const userSocketIds = new Map()
 export const onlineUsers = new Set()
+
+
+console.log(mongoURI, "36");
+
 
 connectDB(mongoURI)
 
@@ -119,7 +123,50 @@ io.on("connection", (socket) => {
         } catch (error) {
             console.log(error);
         }
-    })
+    }
+    )
+
+    socket.on(EDIT_MESSAGE, async ({ chatId, members, messages, messageId }) => {
+        try {
+            // Update the message content in the database
+            await Message.findByIdAndUpdate(messageId, { content: messages });
+
+            const membersSocket = getSockets(members);
+
+            // Notify members that the message was edited
+            io.to(membersSocket).emit(REFETCH_CHATS, {
+                chatId,
+                messageId,
+                newContent: messages,
+                updatedAt: new Date().toISOString()
+            });
+        } catch (error) {
+            console.log(error);
+        }
+    });
+
+
+    socket.on(DELETE_MESSAGE, async ({ chatId, members, messages, messageId }) => {
+        console.log(messageId, "152");
+        try {
+            // Update the message content in the database
+
+            await Message.deleteOne({ _id: messageId });
+
+            const membersSocket = getSockets(members);
+
+            // Notify members that the message was edited
+            io.to(membersSocket).emit(REFETCH_CHATS, {
+                chatId,
+                messageId,
+
+            });
+        } catch (error) {
+            console.log(error);
+        }
+    });
+
+
 
     socket.on(START_TYPING, ({ members, chatId }) => {
         console.log(members, chatId, "121");
@@ -187,6 +234,6 @@ io.on("connection", (socket) => {
 app.use(errorMiddleware)
 
 
-server.listen(port, () => {
+server.listen(port, '0.0.0.0', () => {
     console.log(`Server is running on port ${port} on ${process.env.NODE_ENV}`);
 })
